@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="UTF-8">
+  <title>检查浏览器兼容性</title>
+</head>
+<body>
+  <script type="text/javascript">
+  function canGetUserMediaUse(){
+    return !!(navigator.mediaDevices.getUserMedia||navigator.webkitGetUserMededia||navigator.mozGetUserMedia||navigator.msGetUserMedia);
+  }
+  </script>
+  <button onclick="alert(canGetUserMediaUse())">
+    检查兼容性
+  </button>
+</body>
