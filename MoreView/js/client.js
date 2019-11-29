@@ -16,11 +16,11 @@ function gotDevices(deviceInfos){
 		var option = document.createElement('option');
 		option.text = deviceInfo.label;
 		option.value = deviceInfo.deviceId;
-		if(deviceInfo.kind === 'audioSource'){
+		if(deviceInfo.kind === 'audioinput'){
 			audioSource.appendChild(option);
-		}else if(deviceInfo.kind === 'audioOutput'){
+		}else if(deviceInfo.kind === 'audiooutput'){
 			audioOutput.appendChild(option);
-		}else if(deviceInfo.kind === 'videoSource'){
+		}else if(deviceInfo.kind === 'videoinput'){
 			videoSource.appendChild(option);
 		}
 	})
