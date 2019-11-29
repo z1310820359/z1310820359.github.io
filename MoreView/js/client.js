@@ -13,7 +13,7 @@ function gotDevices(deviceInfos){
 	deviceInfos.forEach( function(deviceInfo){
 		console.log(deviceInfo.kind + ':' + deviceInfo.label +"; id = " +
 		+deviceInfo	.deviceId + ": groupId =" + deviceInfo.groupId);
-		var option = document.createElements('option');
+		var option = document.createElement('option');
 		option.text = deviceInfo.label;
 		option.value = deviceInfo.deviceId;
 		if(deviceInfo.kind === 'audioSource'){
