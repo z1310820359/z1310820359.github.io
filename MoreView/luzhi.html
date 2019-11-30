@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+</head>
+<body>
+<div>
+    <video autoplay controls id="video"></video>
+</div>
+<button onclick="showVideo()">打开摄像头</button>
+<button onclick="start()">开始录制</button>
+<button onclick = "stop()">
+  结束录制
+  </button>
+
+<script>
+    function canGetUserMediaUse() {
+        return !!(navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia);
+    }
+    console.log(canGetUserMediaUse());
+     var video = document.getElementById('video');
+  var stream = null;
+    function showVideo() {
+        if (canGetUserMediaUse()) {
+            navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+            navigator.getUserMedia({
+                video: true,
+                audio: true
+            }, function (stream) {
+                console.log(stream);
+              stram = stream;
+                video.src = URL.createObjectURL(stream);
+              
+            }, function (error) {
+
+            })
+        } else {
+            alert('您的浏览器不兼容');
+        }
+    }
+	
+  var recorder = new MediaRecorder(stream);
+	 function start(){
+    recorder.start();
+  }
+  
+  function stop(){
+    recorder.stop();
+  }
+  var chunks = [];
+  recorder.ondataavaliable = function(e){
+     chunks.push(e.data);
+  }
+</script>
+</body>
+</html>
