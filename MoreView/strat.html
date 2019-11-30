@@ -1,0 +1,186 @@
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <style>
+      body{
+        background-color:#3d6df2;
+        margin-top:15px;
+        font-family:sans-serif;
+        color:white;
+      }
+      video{
+        background:black;
+        border:1px solid gray;
+      }
+      .page{
+        position:relative;
+        display:block;
+        margin:0 auto;
+        width:500px;
+        height:500px;
+      }
+      #yours{
+				width:150px;
+          height:150px;
+        position:absolute;
+        top:15px;
+        right:15px
+        
+      }
+      #theirs{
+        width:500px;
+        height:500px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="call-page" class="page">
+      <video id="yours" autoplay></video>
+       <video id="theirs" autoplay></video>
+      <input type="text" id="their-username" />
+      <button id="call">
+        call
+      </button>
+      <button id="stop">
+        end
+      </button>
+    </div>
+    
+    <script>
+      var ws = new WebSocket(ws://localhost:8888");
+ws.onopen = function(){
+console.log('连接打开')
+}
+ws.onmessage = function(message){
+ var data = JSON.parse(message.data);
+switch(data.type){
+ case "login":
+//登录处理事件
+break;
+case "offer":
+//处理offer
+break;
+case "answer":
+//处理answer
+break;
+
+case "candidate":
+//处理候选者
+break;
+
+default:
+break;
+
+}
+}
+
+function send(message) {
+ws.send(JSON.stringify(message))
+}
+      var yourPc = null;
+      var localstream = null;
+      
+    		function haUserMedia(){
+	
+	navigator.getUserMedia = navigator.getUserMedia||navigator.webkitGetUserMedia||navigator.mozGetUserMedia||navigator.msGetUserMedia;
+	
+	return !!navigator.getUserMedia;
+}
+	
+      function startConnection(){
+        if(hasUserMedia){
+                 navigator.getUserMedia({
+	video: true,
+	audio: true
+}, function(stream) {
+                   localstream = stream;
+	document.getElementById("yours").src = URL.createObjectURL(stream);
+                   var config = {"iceServers":[{"url":"stun:stun.l.google.com:19302"}]};
+                   yourPc = new RTCPeerConnection(config);
+                   //设置流的监听
+                   yourPc.addStream(stream);
+                   yourPc.onaddstream = function(e){
+                     document.getElementById("theirs").src = URL.createObjectURL(e.stream);
+                                          
+                   }
+                   
+                   //添加ice处理事件
+                   yourPc.onicecandidate = function(e)｛
+                   if(e.candidate){
+                      send({
+                        type:"candidate",
+                        candidate:e.candidate
+                      });
+                      }
+                   ｝
+                   
+                   
+}, function(err) {
+	alert(err);
+})
+           }
+      }
+      
+      
+      
+
+document.getElementById("call").onclick = function() {
+	startConnection(); //创建PC
+	//创建offer
+	yourPc.createOffer(function(offer) {
+		//通过websocket发送offer
+		send({
+			type: "offer",
+			offer: offer
+		});
+		//加入本地描述
+		yourPc.setLocalDescription(offer);
+	}, function(error) {
+		alert(error);
+	});
+
+}
+
+//添加offer接收事件
+function onOffer(offer) {
+	yourPc.setRemoteDescription(new RTCSessionDescription(offer));
+	yourPc.createAnswer(function(answer) {
+		yourPc.setLocalDescription(answer);
+		send({
+			type: 'answer',
+			answer: answer
+		})
+	}, function(error) {
+		alert(error);
+	});
+}
+
+function onAnswer(answer) {
+	yourPc.setRemoteDescription(new RTCSessionDescription(answer));
+}
+
+function onCandidate(candiadate) {
+	yourPc.addIceCandidate(new RTCIceCandidate(candiadate));
+}
+
+      
+			document.getElementById("stop").addEventListener('click',function(){
+				send({
+					type:"leave"
+				})
+				onleave();
+			});
+			
+			function onLeave(){
+				document.getElementById("theirs").src = null;
+				yourPc.close();
+				yourPc.onicecandidate = null;
+				yourPc.onaddstream = null;
+				
+			}
+      
+    </script>
+    
+  </body>
+  
+</html>
