@@ -1,87 +1,186 @@
-<!DOCTYPE html>
 <html>
-<head>
-    <link rel='stylesheet' href='/stylesheets/style.css'/>
+  <head>
+    <meta charset="utf-8"/>
     <style>
-        grayscale {
-            -webkit-filter: grayscale(1);
-            filter: grayscale(1);
-        }
-        .sepia {
-            -webkit-filter: sepia(1);
-            filter: sepia(1);
-        }
-        .invert {
-            -webkit-filter: invert(100);
-            filter: invert(100);
-        }
-        .hue-rotate {
-            -webkit-filter: hue-rotate(90deg);
-            filter: hue-rotate(90deg);
-        }
+      body{
+        background-color:#3d6df2;
+        margin-top:15px;
+        font-family:sans-serif;
+        color:white;
+      }
+      video{
+        background:black;
+        border:1px solid gray;
+      }
+      .page{
+        position:relative;
+        display:block;
+        margin:0 auto;
+        width:500px;
+        height:500px;
+      }
+      #yours{
+				width:150px;
+          height:150px;
+        position:absolute;
+        top:15px;
+        right:15px
+        
+      }
+      #theirs{
+        width:500px;
+        height:500px;
+      }
     </style>
-</head>
-<body>
-<div>
-    <video autoplay controls id="video"></video>
-    <canvas id="canvas"></canvas>
-</div>
-<button onclick="showVideo()">打开摄像头</button>
-<button onclick="capture()">拍照</button>
-<button onclick="changeFilter()">滤镜</button>
-<a onclick="toImg()" id="downloadBtn">下载图片</a>
+  </head>
+  <body>
+    <div id="call-page" class="page">
+      <video id="yours" autoplay></video>
+       <video id="theirs" autoplay></video>
+      <input type="text" id="their-username" />
+      <button id="call">
+        call
+      </button>
+      <button id="stop">
+        end
+      </button>
+    </div>
+    
+    <script>
+      var ws = new WebSocket(ws://localhost:8888");
+ws.onopen = function(){
+console.log('连接打开')
+}
+ws.onmessage = function(message){
+ var data = JSON.parse(message.data);
+switch(data.type){
+ case "login":
+//登录处理事件
+break;
+case "offer":
+//处理offer
+break;
+case "answer":
+//处理answer
+break;
 
-<script>
-    function canGetUserMediaUse() {
-        return !!(navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia);
-    }
-    console.log(canGetUserMediaUse());
-    var bol = false;
-    var canvas = document.getElementById('canvas');
-    var video = document.getElementById('video');
-    var downloadBtn = document.getElementById('downloadBtn');
-    function showVideo() {
-        if (canGetUserMediaUse()) {
-            navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
-            navigator.getUserMedia({
-                video: true,
-                audio: true
-            }, function (stream) {
-                console.log(stream);
-                video.src = URL.createObjectURL(stream);
-                bol = true;
-            }, function (error) {
+case "candidate":
+//处理候选者
+break;
 
-            })
-        } else {
-            alert('您的浏览器不兼容');
-        }
-    }
+default:
+break;
 
-    function capture() {
-        if (bol) {
-            canvas.width = video.clientWidth;
-            canvas.height = video.clientHeight;
-            var context = canvas.getContext('2d');
-            context.drawImage(video, 0, 0);
-        } else {
-            alert('请先打开摄像头');
-        }
-    }
+}
+}
 
-    var filters = ['', 'grayscale', 'sepia', 'invert','hue-rotate'],
-            currentFilter = 0;
-    function changeFilter() {
-        currentFilter++;
-        if (currentFilter > filters.length - 1) currentFilter = 0;
-        canvas.className = filters[currentFilter];
+function send(message) {
+ws.send(JSON.stringify(message))
+}
+      var yourPc = null;
+      var localstream = null;
+      
+    		function haUserMedia(){
+	
+	navigator.getUserMedia = navigator.getUserMedia||navigator.webkitGetUserMedia||navigator.mozGetUserMedia||navigator.msGetUserMedia;
+	
+	return !!navigator.getUserMedia;
+}
+	
+      function startConnection(){
+        if(hasUserMedia){
+                 navigator.getUserMedia({
+	video: true,
+	audio: true
+}, function(stream) {
+                   localstream = stream;
+	document.getElementById("yours").src = URL.createObjectURL(stream);
+                   var config = {"iceServers":[{"url":"stun:stun.l.google.com:19302"}]};
+                   yourPc = new RTCPeerConnection(config);
+                   //设置流的监听
+                   yourPc.addStream(stream);
+                   yourPc.onaddstream = function(e){
+                     document.getElementById("theirs").src = URL.createObjectURL(e.stream);
+                                          
+                   }
+                   
+                   //添加ice处理事件
+                   yourPc.onicecandidate = function(e)｛
+                   if(e.candidate){
+                      send({
+                        type:"candidate",
+                        candidate:e.candidate
+                      });
+                      }
+                   ｝
+                   
+                   
+}, function(err) {
+	alert(err);
+})
+           }
+      }
+      
+      
+      
 
-    }
-    function toImg() {
-       var src = canvas.toDataURL("image/png");
-        downloadBtn.href = src;
-        downloadBtn.download = new Date().toLocaleTimeString()
-    }
-</script>
-</body>
+document.getElementById("call").onclick = function() {
+	startConnection(); //创建PC
+	//创建offer
+	yourPc.createOffer(function(offer) {
+		//通过websocket发送offer
+		send({
+			type: "offer",
+			offer: offer
+		});
+		//加入本地描述
+		yourPc.setLocalDescription(offer);
+	}, function(error) {
+		alert(error);
+	});
+
+}
+
+//添加offer接收事件
+function onOffer(offer) {
+	yourPc.setRemoteDescription(new RTCSessionDescription(offer));
+	yourPc.createAnswer(function(answer) {
+		yourPc.setLocalDescription(answer);
+		send({
+			type: 'answer',
+			answer: answer
+		})
+	}, function(error) {
+		alert(error);
+	});
+}
+
+function onAnswer(answer) {
+	yourPc.setRemoteDescription(new RTCSessionDescription(answer));
+}
+
+function onCandidate(candiadate) {
+	yourPc.addIceCandidate(new RTCIceCandidate(candiadate));
+}
+
+      
+			document.getElementById("stop").addEventListener('click',function(){
+				send({
+					type:"leave"
+				})
+				onleave();
+			});
+			
+			function onLeave(){
+				document.getElementById("theirs").src = null;
+				yourPc.close();
+				yourPc.onicecandidate = null;
+				yourPc.onaddstream = null;
+				
+			}
+      
+    </script>
+    
+  </body>
+  
 </html>
