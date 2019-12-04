@@ -1,21 +1,87 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>WebRTC get audio video devices</title>
+    <link rel='stylesheet' href='/stylesheets/style.css'/>
+    <style>
+        grayscale {
+            -webkit-filter: grayscale(1);
+            filter: grayscale(1);
+        }
+        .sepia {
+            -webkit-filter: sepia(1);
+            filter: sepia(1);
+        }
+        .invert {
+            -webkit-filter: invert(100);
+            filter: invert(100);
+        }
+        .hue-rotate {
+            -webkit-filter: hue-rotate(90deg);
+            filter: hue-rotate(90deg);
+        }
+    </style>
 </head>
 <body>
-	<div>
-		<label>autio input device:</label>
-		<select id="audioSource"></select>
-	</div>
-	<div>
-		<label>autio output device:</label>
-		<select id="audioOutput"></select>
-	</div>
-	<div>
-		<label>video input device:</label>
-		<select id="videoOutput"></select>
-	</div>
-	<script src="./js/client.js"></script>
+<div>
+    <video autoplay controls id="video"></video>
+    <canvas id="canvas"></canvas>
+</div>
+<button onclick="showVideo()">打开摄像头</button>
+<button onclick="capture()">拍照</button>
+<button onclick="changeFilter()">滤镜</button>
+<a onclick="toImg()" id="downloadBtn">下载图片</a>
+
+<script>
+    function canGetUserMediaUse() {
+        return !!(navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia);
+    }
+    console.log(canGetUserMediaUse());
+    var bol = false;
+    var canvas = document.getElementById('canvas');
+    var video = document.getElementById('video');
+    var downloadBtn = document.getElementById('downloadBtn');
+    function showVideo() {
+        if (canGetUserMediaUse()) {
+            navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+            navigator.getUserMedia({
+                video: true,
+                audio: true
+            }, function (stream) {
+                console.log(stream);
+                video.src = URL.createObjectURL(stream);
+                bol = true;
+            }, function (error) {
+
+            })
+        } else {
+            alert('您的浏览器不兼容');
+        }
+    }
+
+    function capture() {
+        if (bol) {
+            canvas.width = video.clientWidth;
+            canvas.height = video.clientHeight;
+            var context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0);
+        } else {
+            alert('请先打开摄像头');
+        }
+    }
+
+    var filters = ['', 'grayscale', 'sepia', 'invert','hue-rotate'],
+            currentFilter = 0;
+    function changeFilter() {
+        currentFilter++;
+        if (currentFilter > filters.length - 1) currentFilter = 0;
+        canvas.className = filters[currentFilter];
+
+    }
+    function toImg() {
+       var src = canvas.toDataURL("image/png");
+        downloadBtn.href = src;
+        downloadBtn.download = new Date().toLocaleTimeString()
+    }
+</script>
 </body>
 </html>
